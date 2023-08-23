@@ -1,34 +1,36 @@
 # ready-bot
-[![Discord Bots](https://top.gg/api/widget/status/389210640612589568.svg)](https://top.gg/bot/389210640612589568)
-[![Discord Bots](https://top.gg/api/widget/servers/389210640612589568.svg)](https://top.gg/bot/389210640612589568)
 
-## THIS IS THE LEGACY VERSION OF READY-BOT
-As of April 22, 2023, this version of the bot has been replaced by the new version of the bot available [here](https://github.com/BurnsCommaLucas/ready-botlin). The bot still does the same thing, but all bug reports, suggestions, etc should be taken to the [new repo](https://github.com/BurnsCommaLucas/ready-botlin)
+This is a forked and modified version of the [this](https://github.com/BurnsCommaLucas/ready-bot) discord ready bot. I wanted to make some changes to the way the bot worked for the way me and my friends use a ready checker. I used the node js version as a jumping off point because I'm much more comfortable working in it than kotlin. I'm just self hosting this for personal use, if you want to use it I recommend you do the same.
 
-A WoW style ready-check bot for [Discord](https://discordapp.com) servers. Built and deployed automatically through [Heroku](https://heroku.com).
+The primary difference between this and the original is that I wanted cleaner status message handling that doesn't spam the chat. There is now one single status message that gets updated as people ready and unready. Any individual ready messages are sent as ephemeral. The status command moves this status message back up to the top of chat and removes the original, so there's only every one status message for a ready check.
 
-[Click here to add this bot to your server.](https://discordapp.com/oauth2/authorize?client_id=389210640612589568&scope=bot) (You need to have server management  permissions to add the bot.)
+I also added action buttons for readying and unreadying.
 
-If you like the bot, [vote for it on top.gg!](https://top.gg/bot/389210640612589568) It helps other people find the bot! Want to support development of this bot? Find the bot on [GitHub](https://github.com/BurnsCommaLucas/ready-bot).
-
-If you need help with ready-bot, you can open an issue in GitHub or head over to the [ready-bot support server](https://discord.gg/uwkF27Gt9M).
-
----
+The big new feature is auto adding all the members of the voice chat that the person initiating the chat is currently in. This is a much more elegant way of tagging people for the way me and my friends use this.
 
 ## Usage
 
 Once you add the bot to your server, start a ready check for a number of users with:
 
 ```
-/check count:<number>
+/check type:Count count:<number>
 ```
 or check for specific users with
 ```
-/check mentions:<user tag> <user tag> ...
+/check type:Mentions mentions:<user tag> <user tag> ...
+```
+or tag everyone in the voice channel you are in with
+```
+/check type:Channel
 ```
 and have users ready-up with 
 ```
 /ready
+```
+or just by hitting the Ready button on the status message!
+Bring the status message back to the top of chat with 
+```
+/status
 ```
 Full usage can be found by typing 
 ```
