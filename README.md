@@ -28,6 +28,7 @@ and have users ready-up with
 /ready
 ```
 or just by hitting the Ready button on the status message!
+
 Bring the status message back to the top of chat with 
 ```
 /status
