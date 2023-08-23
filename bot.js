@@ -20,19 +20,21 @@ module.exports = {
 		// Get the current check for the current channel if one exists
 		const currentCheck = checks[channelId];
 
-		switch (interaction.commandName) {
+		let commandName;
+
+		if(interaction.isButton()) {
+			commandName = interaction.customId;
+		} else {
+			commandName = interaction.commandName;
+		}
+
+		switch (commandName) {
 			case (CON.HELP):
 				await UTIL.safeRespond(interaction, {
 					content: `To create a check, run \`/${CON.CHECK.CREATE}\`\n` +
 						`To respond to a check, run \`/${CON.READY}\` or \`/${CON.UNREADY}\`\n` +
-						`To see who still needs to ready, run \`/${CON.STATUS}\`\n` +
-						`If you still need help, you can come check out our Github page. Type \`/${CON.CONTRIBUTE}\``,
-					ephemeral: true
-				});
-				return;
-			case (CON.CONTRIBUTE):
-				await UTIL.safeRespond(interaction, {
-					content: "To get involved in the development of ready-bot or to report an issue, visit our [Github](https://github.com/BurnsCommaLucas/ready-bot)",
+						`To cancel a check, run \`/${CON.CHECK.CANCEL}\`\n` +
+						`To see who still needs to ready, run \`/${CON.STATUS}\`\n`,
 					ephemeral: true
 				});
 				return;
@@ -56,40 +58,93 @@ module.exports = {
 				}
 				return;
 			case (CON.STATUS):
-				if (currentCheck) {
-					await UTIL.safeRespond(interaction, {
-						content: `Still waiting for ${Check.prototype.getRemainderString.call(currentCheck)} to ready.`,
-						ephemeral: true
-					});
-				}
-				else {
+				if (!currentCheck) {
 					await UTIL.safeRespond(interaction, {
 						content: UTIL.errorMsg("No ready check active in this channel."),
-						ephemeral: true
-					});
-				}
-				return;
-			case (CON.CHECK.CREATE):
-				if (interaction.options.data.length <= 0) {
-					await UTIL.safeRespond(interaction, {
-						content: `You'll need to select either \`${CON.CHECK.CREATE_MENTION_TARGET}\` or \`${CON.CHECK.CREATE_NUM_TARGET}\` to create a check.`,
 						ephemeral: true
 					});
 					return;
 				}
 
-				const checkType = interaction.options.data[0].name;
+				// send new status
+				let newStatus = await UTIL.safeRespond(interaction, currentCheck.getStatusOptions());
+
+				// delete old status
+				await currentCheck.statusMessage.delete();
+
+				// update the saved status to the new one
+				currentCheck.statusMessage = newStatus;
+
+				return;
+			case (CON.CHECK.CANCEL):
+				if (!currentCheck) {
+					await UTIL.safeRespond(interaction, {
+						content: UTIL.errorMsg("No ready check active in this channel."),
+						ephemeral: true
+					});
+					return;
+				}
+
+				await currentCheck.statusMessage.delete();
+
+				delete checks[channelId];
+				await UTIL.safeRespond(interaction, {
+					content: "Current ready check cancelled."
+				});
+				return;
+			case (CON.CHECK.CREATE):
+				var checkType;
+				var checkCount = 0;
+				var checkMentions;
+				for (const option of interaction.options.data) {
+					if (option.name == CON.CHECK.CREATE_TARGET_TYPE) {
+						checkType = option.value;
+					}
+					if (option.name == CON.CHECK.CREATE_NUM_TARGET) {
+						checkCount = option.value;
+					}
+					if (option.name == CON.CHECK.CREATE_MENTION_TARGET) {
+						checkMentions = option.value;
+					}
+				}
+				if (!checkType) {
+					await UTIL.safeRespond(interaction, {
+						content: `You need to select a check type to create a check.`,
+						ephemeral: true
+					});
+					return;
+				}
+
+				if (checkType == CON.CHECK.CREATE_NUM_TARGET && checkCount <= 0) {
+					await UTIL.safeRespond(interaction, {
+						content: `You must include a \`${CON.CHECK.CREATE_NUM_TARGET}\` parameter > 0 to create a count type check.`,
+						ephemeral: true
+					});
+					return;
+				}
+
+				if (checkType == CON.CHECK.CREATE_MENTION_TARGET && !checkMentions) {
+					await UTIL.safeRespond(interaction, {
+						content: `You must include a \`${CON.CHECK.CREATE_MENTION_TARGET}\` parameter with at least one mention to create a mention type check.`,
+						ephemeral: true
+					});
+					return;
+				}
+
 				var activeParam;
 				switch (checkType) {
+					case CON.CHECK.CREATE_CHANNEL_TARGET:
+						activeParam = await this.parseChannelCheckHandler.call(this, interaction)
+						break;
 					case CON.CHECK.CREATE_MENTION_TARGET:
-						activeParam = await this.parseMentionCheckHandler.call(this, interaction)
+						activeParam = await this.parseMentionCheckHandler.call(this, interaction, checkMentions)
 						break;
 					case CON.CHECK.CREATE_NUM_TARGET:
-						activeParam = await this.parseNumCheckHandler.call(this, interaction)
+						activeParam = await this.parseNumCheckHandler.call(this, interaction, checkCount)
 						break;
 					default:
 						await UTIL.safeRespond(interaction, {
-							content: `I don't understand check type '${checkType}'. Please get in touch with my creator to let them know this happened!`,
+							content: `I don't understand check type '${checkType}'.`,
 							ephemeral: true
 						});
 						return;
@@ -97,17 +152,16 @@ module.exports = {
 
 				// If the activeParam is filled out and the activation call succeeds, save the check
 				if (!!activeParam && Check.prototype.activate.call(newCheck, activeParam)) {
-					const plural = UTIL.plural(newCheck.count);
-					await UTIL.safeRespond(interaction, {
-						content: `${UTIL.whoToReady(newCheck.targets) || "Everyone"} ready up! Type \`/${CON.READY}\`. ${author} is waiting for ${newCheck.count} user${plural}.`
-					});
+					let response = await UTIL.safeRespond(interaction, newCheck.getStatusOptions());
+					if (response) {
+						newCheck.statusMessage = response;
+					}
 					checks[channelId] = newCheck;
 				}
 				else {
 					if (interaction.replied) break;
 					await UTIL.safeRespond(interaction, {
-						content: `Sorry, something went wrong and I couldn't create your check.\n` +
-							`Please type \`/${CON.CONTRIBUTE}\` to report this to my maker!`,
+						content: `Sorry, something went wrong and I couldn't create your check.`,
 						ephemeral: true
 					});
 					console.error("Failed to create check:", interaction);
@@ -116,7 +170,7 @@ module.exports = {
 				break;
 			default:
 				await UTIL.safeRespond(interaction, {
-					content: "Yikes! Somehow a command not meant for me made it all the way to my system 😥. Please let my creator know this happened! https://github.com/BurnsCommaLucas/ready-bot",
+					content: "Yikes! Somehow a command not meant for me made it all the way to my system 😥.",
 					ephemeral: true
 				});
 				break;
@@ -125,9 +179,7 @@ module.exports = {
 		setTimeout(async () => {
 			if (!interaction.replied) {
 				await UTIL.safeRespond(interaction, {
-					content: "Sorry, something has gone wrong! If this message keeps showing up, please get " +
-						"in touch with my maker since it probably means something bad is happening to my system. " +
-						"https://github.com/BurnsCommaLucas/ready-bot",
+					content: "Sorry, something has gone wrong!",
 					ephemeral: true
 				})
 			}
@@ -137,10 +189,11 @@ module.exports = {
 	/**
 	 * 
 	 * @param {DISCORD.CommandInteraction} interaction
+	 * @param {string} checkMentions
 	 */
-	async parseMentionCheckHandler(interaction) {
+	async parseMentionCheckHandler(interaction, checkMentions) {
 		// Don't handle @everyone or @here tags so we don't spam people
-		if (interaction.options.data[0].value.indexOf("@everyone") != -1 || interaction.options.data[0].value.indexOf("@here") != -1) {
+		if (checkMentions.indexOf("@everyone") != -1 || checkMentions.indexOf("@here") != -1) {
 			await UTIL.safeRespond(interaction, {
 				content: "Sorry, I can't use global tags like \`everyone\` or \`here\`. Try picking individual users instead.",
 				ephemeral: true
@@ -178,18 +231,53 @@ module.exports = {
 	},
 
 	/**
-	 * Helper function to create a check associated with the given channel & author
+	 * 
 	 * @param {DISCORD.CommandInteraction} interaction
 	 */
-	async parseNumCheckHandler(interaction) {
-		var count;
-		try {
-			count = interaction.options.data.filter(opt => opt.name === CON.CHECK.CREATE_NUM_TARGET)[0].value;
-		} catch (error) {
-			console.debug("Failed to parse count for check.", error);
+	async parseChannelCheckHandler(interaction) {
+		let member = await interaction.member.fetch(true);
+		const voice = member.voice;
+		const channel = voice.channel;
+
+		if(!channel) {
+			await UTIL.safeRespond(interaction, {
+				content: "Sorry, you must be in a voice channel to use this ready check type.",
+				ephemeral: true
+			});
 			return;
 		}
 
+		let mentions = [];
+
+		try {
+			mentions.push(
+				...channel
+					.members
+					.map(member => member.user)
+					.filter(user => !user.bot)
+					.values()
+			);
+		} catch (e) {
+			// There's no one in the voice channel
+		}
+
+		if (mentions === undefined || mentions.length === 0) {
+			await UTIL.safeRespond(interaction, {
+				content: `Sorry, you must be in a voice channel to use this ready check type.`,
+				ephemeral: true
+			});
+			return;
+		}
+
+		return mentions
+	},
+
+	/**
+	 * Helper function to create a check associated with the given channel & author
+	 * @param {DISCORD.CommandInteraction} interaction
+	 * @param {number} count
+	 */
+	async parseNumCheckHandler(interaction, count) {
 		if (count < 1) {
 			await UTIL.safeRespond(interaction, {
 				content: `Sorry, I can only wait for one or more users with a \`${CON.CHECK.CREATE_NUM_TARGET}\` check. Try creating your check with a count of at least 1.\n` +

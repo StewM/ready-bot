@@ -11,6 +11,26 @@ const commands = [
         description: "Create a ready check",
         options: [
             {
+                name: CON.CHECK.CREATE_TARGET_TYPE,
+                description: "The type of ready check to do",
+                type: 3,
+                required: true,
+                choices: [
+                    {
+                        name: CON.CHECK.CREATE_TARGET_TYPE_CHANNEL_NAME,
+                        value: CON.CHECK.CREATE_CHANNEL_TARGET
+                    },
+                    {
+                        name: CON.CHECK.CREATE_TARGET_TYPE_NUM_NAME,
+                        value: CON.CHECK.CREATE_NUM_TARGET
+                    },
+                    {
+                        name: CON.CHECK.CREATE_TARGET_TYPE_MENTION_NAME,
+                        value: CON.CHECK.CREATE_MENTION_TARGET
+                    }
+                ]
+            },
+            {
                 name: CON.CHECK.CREATE_NUM_TARGET,
                 description: "The number of users to ready",
                 type: 4
@@ -23,6 +43,10 @@ const commands = [
         ]
     },
     {
+        name: CON.CHECK.CANCEL,
+        description: "Cancel a ready check"
+    },
+    {
         name: CON.READY,
         description: 'Respond "Ready" to a ready check'
     },
@@ -32,15 +56,11 @@ const commands = [
     },
     {
         name: CON.STATUS,
-        description: "See who still needs to ready"
+        description: "Check the status of the current ready check"
     },
     {
         name: CON.HELP,
         description: "Get help using ready-bot"
-    },
-    {
-        name: CON.CONTRIBUTE,
-        description: "Get details about ready-bot and how to contribute to its development"
     }
 ];
 

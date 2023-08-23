@@ -1,4 +1,4 @@
-const { Client } = require("discord.js");
+const { Client, GatewayIntentBits } = require("discord.js");
 const CON = require("./constants.js");
 const DEPLOY = require("./deploy-commands.js")
 require("dotenv").config();
@@ -6,7 +6,7 @@ require("dotenv").config();
 const BOT = require("./bot.js");
 
 const CLIENT = new Client({
-	intents: 2048
+	intents: [3072, GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates]
 });
 
 const checks = {};
@@ -21,7 +21,7 @@ CLIENT.on("ready", () => {
 });
 
 CLIENT.on("interactionCreate", interaction => {
-	if (!interaction.isCommand()) return;
+	if (!interaction.isCommand() && !interaction.isButton()) return;
 	BOT.handleMessage(checks, interaction);
 });
 
