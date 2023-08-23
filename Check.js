@@ -9,6 +9,7 @@ class Check {
 	 */
 	constructor(_author) {
 		this.author = _author;
+		this.statusMessage = null;
 		this.count = 0;
 		this.targets = [];
 		this.readiedUsers = [];
@@ -126,14 +127,22 @@ class Check {
 
 		this.readiedUsers.push(user);
 		this.readiedCount = this.readiedUsers.length;
+		
+		// update status message
+		await this.statusMessage.edit(this.getStatusOptions());
 
-		let msg = `${user} is ready! ${this.countRemaining()} user${UTIL.plural(this.countRemaining())} left.`;
-
-		if (this.isCheckSatisfied()) msg += `\n\nCheck complete, let's go, ${this.author}!`;
-
-		await UTIL.safeRespond(interaction, {
-			content: msg
-		});
+		// if complete send complete message
+		if (this.isCheckSatisfied()) {
+			await UTIL.safeRespond(interaction, {
+				content: `Check complete! Ready to go, ${this.author}!`
+			});
+		} else {
+			// else send ephemeral message to readier
+			await UTIL.safeRespond(interaction, {
+				content: `You've readied! ${this.countRemaining()} left.`,
+				ephemeral: true
+			});
+		}
 	}
 
 	/**
@@ -141,7 +150,6 @@ class Check {
 	 * @param {DISCORD.User} user User to mark ready
 	 */
 	async unReadyUser(user, interaction) {
-		var msg;
 		if (!this.isUserReadied(user)) {
 			await UTIL.safeRespond(interaction, {
 				content: "You haven't readied yet, no need to unready!",
@@ -151,10 +159,59 @@ class Check {
 		else {
 			this.readiedUsers.splice(this.readiedUsers.indexOf(user), 1);
 			this.readiedCount = this.readiedUsers.length;
+			//update status message
+			await this.statusMessage.edit(this.getStatusOptions());
+			//send ephemeral message to unreadier
 			await UTIL.safeRespond(interaction, {
-				content: `${user} is not ready! ${this.countRemaining()} user${UTIL.plural(this.countRemaining())} left.`
+				content: `You've un-readied! ${this.countRemaining()} left.`,
+				ephemeral: true
 			});
 		}
+	}
+
+	getStatusMessage() {
+		let msg = `:white_check_mark: Ready Check Started! :white_check_mark:\n\n${this.readiedCount}/${this.count} Ready!`;
+		
+		msg += "\n\nReady:\n"
+		msg += this.readiedUsers.join("\n");
+
+		if (this.isTargeted) {
+			msg += "\n\nNot Ready:\n"
+			msg += UTIL.leftOuter(this.targets, this.readiedUsers).join("\n");
+		}
+
+		msg += "\n";
+
+		return msg;
+	}
+
+	getStatusOptions() {
+		let message = this.getStatusMessage();
+
+		let options = {
+			content: message,
+			components: [
+				{
+					type: 1,
+					components: [
+						{
+							type: 2,
+							label: "Ready",
+							style: 3,
+							custom_id: CON.READY
+						},
+						{
+							type: 2,
+							label: "Not Ready",
+							style: 4,
+							custom_id: CON.UNREADY
+						}
+					]
+				}
+			]
+		}
+
+		return options;
 	}
 }
 

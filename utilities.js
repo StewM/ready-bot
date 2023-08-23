@@ -19,8 +19,8 @@ module.exports = {
     safeRespond: async function (interaction, options) {
         try {
             if (interaction.replied) return;
-            await interaction.reply(options);
-            return true;
+            let response = await interaction.reply(options);
+            return response;
         } catch (error) {
             console.warn("Failed to reply to interaction:", interaction, options)
             console.trace();
