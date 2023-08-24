@@ -2,11 +2,11 @@
 
 This is a forked and modified version of the [this](https://github.com/BurnsCommaLucas/ready-bot) discord ready bot. I wanted to make some changes to the way the bot worked for the way me and my friends use a ready checker. I used the node js version as a jumping off point because I'm much more comfortable working in it than kotlin. I'm just self hosting this for personal use, if you want to use it I recommend you do the same.
 
-The primary difference between this and the original is that I wanted cleaner status message handling that doesn't spam the chat. There is now one single status message that gets updated as people ready and unready. Any individual ready messages are sent as ephemeral. The status command moves this status message back up to the top of chat and removes the original, so there's only every one status message for a ready check.
+The primary difference between this and the original is that I wanted cleaner status message handling that doesn't spam the chat. There is now one single status message that gets updated as people ready and unready. Any individual ready messages are sent as ephemeral. The status command moves this status message back up to the top of chat and removes the original, so there's only ever one status message for a ready check.
 
 I also added action buttons for readying and unreadying.
 
-The big new feature is auto adding all the members of the voice chat that the person initiating the chat is currently in. This is a much more elegant way of tagging people for the way me and my friends use this.
+The big new feature is auto adding all the members of the voice chat that the person initiating the check is currently in. This is a much more elegant way of tagging people for the way me and my friends use this.
 
 ## Usage
 

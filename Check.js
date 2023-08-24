@@ -133,6 +133,11 @@ class Check {
 
 		// if complete send complete message
 		if (this.isCheckSatisfied()) {
+			// update status to not have buttons
+			await this.statusMessage.edit({
+				content: this.getStatusMessage()
+			});
+			// send complete message
 			await UTIL.safeRespond(interaction, {
 				content: `Check complete! Ready to go, ${this.author}!`
 			});
