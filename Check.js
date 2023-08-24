@@ -135,7 +135,8 @@ class Check {
 		if (this.isCheckSatisfied()) {
 			// update status to not have buttons
 			await this.statusMessage.edit({
-				content: this.getStatusMessage()
+				content: this.getStatusMessage(),
+				components: []
 			});
 			// send complete message
 			await UTIL.safeRespond(interaction, {
